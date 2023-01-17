@@ -8,8 +8,8 @@ void CallP(Predicate pr, void* data){
     T* casted = reinterpret_cast<T*>(data);
     pr(*casted);
 }
-template <std::size_t curN = 0, class T, class Val, class... Vals>
-constexpr std::size_t FindNumber(){
+template <std::int16_t curN = 0, class T, class Val, class... Vals>
+constexpr std::int16_t FindNumber(){
 
     if constexpr(std::is_same_v<std::decay_t<T>, std::decay_t<Val>>){
         return curN;
@@ -44,7 +44,7 @@ constexpr long unsigned int FindMaxSize(){
 template<class... PTypes>
 class MyVariant{
 private:
-    std::size_t curT;
+    std::int16_t curT;
     std::array<char, FindMaxSize<0, PTypes...>()> data;
 
 
@@ -93,13 +93,14 @@ int main()
 {
     char a = 'a';
     MyVariant<int, char,double, bool> v('a');
+    constexpr int sz = sizeof(std::size_t);
     auto pr = [](auto data){
         std::cout<< std::endl << data << std::endl;
     };
     v.Call(pr);
     v = false;
     v.Call(pr);
-    v= 13;
+    v= 13.3;
     v.Call(pr);
 }
 
