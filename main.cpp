@@ -1,12 +1,18 @@
 #include <iostream>
 #include <type_traits>
 #include <array>
-#include <memory.h>
+#include <memory>
 #include <cstring>
 template<class Predicate, class T>
 void CallP(Predicate pr, void* data){
     T* casted = reinterpret_cast<T*>(data);
     pr(*casted);
+}
+template <class T>
+void Clearer(void* data){
+    T* casted = reinterpret_cast<T*>(data);
+    T deletableObj = std::move(*casted); //нужно для неявного вызова деструктор объекта
+
 }
 template <std::int16_t curN = 0, class T, class Val, class... Vals>
 constexpr std::int16_t FindNumber(){
@@ -52,31 +58,40 @@ public:
     MyVariant(){
         this->curT = -1;
     }
-
+    ~MyVariant(){
+        this->clear();
+    }
     template<class T>
     MyVariant(T&& val){
         constexpr auto nextN = FindNumber<0, T, PTypes...>();
+        this->curT = nextN;
+        int sz = this->data.size();
+        constexpr int ssz = sizeof(std::shared_ptr<int>);
         if constexpr(nextN != -1){
+            using valueT = std::decay_t<T>;
 
-                std::memcpy(&(this->data), &val, sizeof(val));
-                this->curT = nextN;
+            valueT* castedPtr = new(this->data.data()) valueT(val);
+
+
+
+
+
 
         }
-        else{
-            this->curT = -1;
-        }
+
     }
     template <class T>
-    MyVariant& operator=(const T&& val){
+    MyVariant& operator=(T&& val){
         constexpr auto nextN = FindNumber<0, T, PTypes...>();
         if constexpr(nextN != -1){
+            this->clear();
+            using valueT = std::decay_t<T>;
+            valueT* castedPtr = new(this->data.data()) valueT(val);
 
-                std::memcpy(&(this->data), &val, sizeof(val));
-                this->curT = nextN;
 
-        }
-        else{
-            this->curT = -1;
+
+            this->curT = nextN;
+
         }
         return *this;
     }
@@ -87,20 +102,39 @@ public:
             cont[this->curT](f, this->data.data());
         }
     }
+    void clear(){
+        if(this->curT != -1){
+            constexpr std::array<void(*)(void*), sizeof... (PTypes)> cont{&Clearer<PTypes>...};
+            cont[this->curT](this->data.data());
+        }
+
+    }
 };
 
 int main()
 {
+    std::shared_ptr<int> sh = std::make_shared<int>(8);
+
+    using iPtr = std::shared_ptr<int>;
     char a = 'a';
-    MyVariant<int, char,double, bool> v('a');
-    constexpr int sz = sizeof(std::size_t);
+    std::cout << sh.use_count();
+    MyVariant<int, char,double, bool,std::shared_ptr<int>> v(sh);
+    std::cout << sh.use_count();
+    v = 'a';
+    std::cout << sh.use_count();
     auto pr = [](auto data){
         std::cout<< std::endl << data << std::endl;
     };
+
     v.Call(pr);
-    v = false;
+    v = true;
     v.Call(pr);
+
     v= 13.3;
     v.Call(pr);
+    v = sh;
+    std::cout << sh.use_count();
+    v = 'a';
+    std::cout << sh.use_count();
 }
 
