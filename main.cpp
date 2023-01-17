@@ -52,15 +52,32 @@ public:
     MyVariant(){
         this->curT = -1;
     }
+
     template<class T>
-    MyVariant(T val){
-        std::memcpy(&(this->data), &val, sizeof(val));
-        this->curT = FindNumber<0, T, PTypes...>(); // отбрасывание ссылочности есть внутри
+    MyVariant(T&& val){
+        constexpr auto nextN = FindNumber<0, T, PTypes...>();
+        if constexpr(nextN != -1){
+
+                std::memcpy(&(this->data), &val, sizeof(val));
+                this->curT = nextN;
+
+        }
+        else{
+            this->curT = -1;
+        }
     }
     template <class T>
-    MyVariant& operator=(T val){
-        std::memcpy(&(this->data), &val, sizeof(val));
-        this->curT = FindNumber<0, T, PTypes...>(); // отбрасывание ссылочности есть внутри
+    MyVariant& operator=(const T&& val){
+        constexpr auto nextN = FindNumber<0, T, PTypes...>();
+        if constexpr(nextN != -1){
+
+                std::memcpy(&(this->data), &val, sizeof(val));
+                this->curT = nextN;
+
+        }
+        else{
+            this->curT = -1;
+        }
         return *this;
     }
     template <class Functor>
@@ -74,6 +91,7 @@ public:
 
 int main()
 {
+    char a = 'a';
     MyVariant<int, char,double, bool> v('a');
     auto pr = [](auto data){
         std::cout<< std::endl << data << std::endl;
