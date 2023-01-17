@@ -3,7 +3,11 @@
 #include <array>
 #include <memory.h>
 #include <cstring>
-
+template<class Predicate, class T>
+void CallP(Predicate pr, void* data){
+    T* casted = reinterpret_cast<T*>(data);
+    pr(*casted);
+}
 template <std::size_t curN = 0, class T, class Val, class... Vals>
 constexpr std::size_t FindNumber(){
 
@@ -42,40 +46,8 @@ class MyVariant{
 private:
     std::size_t curT;
     std::array<char, FindMaxSize<0, PTypes...>()> data;
-    template <std::size_t curSt, std::size_t minSt, std::size_t maxSt, class Functor>
-    void BinFindAndCall(Functor& f){
-        if constexpr( curSt > 0 && curSt < sizeof...(PTypes)){
-            if(this->curT == curSt){
-                using T = std::tuple_element_t<curSt, std::tuple<PTypes...>>;
-                T data;
-                std::memcpy(&data, &(this->data), sizeof(T));
-                f(data);
-            }
-            else {
-                if(curSt < this->curT)
-                {
-                    constexpr std::size_t nextSt = std::max((curSt + maxSt)/2, curSt + 1);
-                    this->BinFindAndCall<nextSt, curSt + 1, maxSt, Functor>(f);
-                }
-                else {
-                    constexpr std::size_t nextSt = std::min((minSt + curSt) / 2, curSt - 1);
-                    this->BinFindAndCall<nextSt, minSt, curSt - 1, Functor>(f);
-                }
 
-            }
-        }
-    }
-    template<int CurSt = 0, class Functor, class T, class... Types>
-    void FindAndCall(Functor& f){
-        if(this->curT == CurSt){
-            T data;
-            std::memcpy(&data, &(this->data), sizeof(T));
-            f(data);
-        }
-        else if constexpr (sizeof...(Types) != 0){
-            FindAndCall<CurSt + 1, Functor, Types...>(f);
-        }
-    }
+
 public:
     MyVariant(){
         this->curT = -1;
@@ -94,10 +66,8 @@ public:
     template <class Functor>
     void Call(Functor& f){
         if(this->curT != -1){
-            constexpr std::size_t startSt = 0 + sizeof...(PTypes) - 1;
-
-            this->BinFindAndCall<startSt, 0, sizeof...(PTypes) - 1, Functor>(f);
-
+            constexpr std::array<void(*)(std::decay_t<Functor>, void*), sizeof... (PTypes)> cont{&CallP<std::decay_t<Functor>, PTypes>...};
+            cont[this->curT](f, this->data.data());
         }
     }
 };
