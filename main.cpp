@@ -10,8 +10,9 @@ void CallP(Predicate pr, void* data){
 }
 template <class T>
 void Clearer(void* data){
-    T* casted = reinterpret_cast<T*>(data);
-    T deletableObj = std::move(*casted); //нужно для неявного вызова деструктор объекта
+    using cT = std::decay_t<T>;
+    cT* casted = reinterpret_cast<cT*>(data);
+    cT deletableObj = std::move(*casted); //нужно для неявного вызова деструктор объекта
 
 }
 template <std::int16_t curN = 0, class T, class Val, class... Vals>
@@ -118,7 +119,7 @@ int main()
     using iPtr = std::shared_ptr<int>;
     char a = 'a';
     std::cout << sh.use_count();
-    MyVariant<int, char,double, bool,std::shared_ptr<int>> v(sh);
+    MyVariant<int, char,double, bool, const std::shared_ptr<int>> v(sh);
     std::cout << sh.use_count();
     v = 'a';
     std::cout << sh.use_count();
