@@ -67,12 +67,10 @@ public:
     MyVariant(T&& val){
         constexpr auto nextN = FindNumber<0, T, PTypes...>();
         this->curT = nextN;
-        int sz = this->data.size();
-        constexpr int ssz = sizeof(std::shared_ptr<int>);
         if constexpr(nextN != -1){
             using valueT = std::decay_t<T>;
 
-            valueT* castedPtr = new(this->data.data()) valueT(val);
+            new(this->data.data()) valueT(std::forward<T>(val));
 
 
 
@@ -88,7 +86,7 @@ public:
         if constexpr(nextN != -1){
             this->clear();
             using valueT = std::decay_t<T>;
-            valueT* castedPtr = new(this->data.data()) valueT(val);
+            new(this->data.data()) valueT(std::forward<T>(val));
 
 
 
